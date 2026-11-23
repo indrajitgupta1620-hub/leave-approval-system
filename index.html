@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leave Approval System</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .container {
+            position: relative;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 1100px;
+            margin: auto;
+            background: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .employee-theme {
+            background: linear-gradient(135deg, #f6d365, #fda085);
+            color: #222;
+        }
+
+        .manager-theme {
+            background: linear-gradient(135deg, #84fab0, #8fd3f4);
+            color: #0b3d2e;
+        }
+
+        .dashboard-header {
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .employee-header { background: #ff9a3c; color: white; }
+        .manager-header { background: #20b2aa; color: white; }
+
+        input, select, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .hidden { display: none; }
+
+        .sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .section {
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 250px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .box {
+            background: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            word-break: break-word;
+        }
+
+        .btn-approve { background: #38a169; margin-top: 8px; }
+        .btn-reject { background: #e53e3e; }
+
+        .date-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .top-back {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 6px 14px;
+            font-size: 12px;
+            background: #555;
+            color: white;
+            border-radius: 20px;
+            width: auto;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container" id="loginBox">
+    <h1>Leave Approval System</h1>
+    <h2>Login</h2>
+    <input type="text" id="username" name="username" placeholder="Enter Name" />
+    <select id="role" name="role">
+        <option value="employee">Employee</option>
+        <option value="manager">Manager</option>
+    </select>
+    <button id="loginBtn" name="loginBtn" onclick="login()">Login</button>
+</div>
+
+<div class="container hidden employee-theme" id="employeeBox">
+    <button class="top-back" id="empBackBtn" onclick="goBack()">← Back</button>
+
+    <div class="dashboard-header employee-header">Employee Dashboard</div>
+
+    <div class="date-row">
+        <input type="date" id="startDate" name="startDate" />
+        <input type="date" id="endDate" name="endDate" />
+    </div>
+
+    <textarea id="reason" name="reason" placeholder="Leave Reason" rows="3"></textarea>
+    <button id="applyLeaveBtn" name="applyLeaveBtn" onclick="applyLeave()">Apply Leave</button>
+
+    <div class="sections">
+        <div class="section"><h3>Pending</h3><div id="empPending"></div></div>
+        <div class="section"><h3>Approved</h3><div id="empApproved"></div></div>
+        <div class="section"><h3>Rejected</h3><div id="empRejected"></div></div>
+    </div>
+</div>
+
+<div class="container hidden manager-theme" id="managerBox">
+    <button class="top-back" id="mgrBackBtn" onclick="goBack()">← Back</button>
+
+    <div class="dashboard-header manager-header">Manager Dashboard</div>
+
+    <div class="sections">
+        <div class="section"><h3>Pending</h3><div id="pendingLeaves"></div></div>
+        <div class="section"><h3>Approved</h3><div id="approvedLeaves"></div></div>
+        <div class="section"><h3>Rejected</h3><div id="rejectedLeaves"></div></div>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 25px; color: #ffffff; font-size: 14px;">
+    <a href="#doc" id="docLink" style="color: #ffffff; margin-right: 20px; text-decoration: underline;">System Documentation</a>
+    <a href="#help" id="helpLink" style="color: #ffffff; text-decoration: underline;">Help & Support</a>
+</div>
+
+<script>
+let currentUser = "";
+
+function getLeaves() {
+    return JSON.parse(localStorage.getItem("leaves") || "[]");
+}
+
+function saveLeaves(leaves) {
+    localStorage.setItem("leaves", JSON.stringify(leaves));
+}
+
+function login() {
+    currentUser = document.getElementById("username").value.trim();
+    let role = document.getElementById("role").value;
+
+    if (!currentUser) {
+        alert("Enter username");
+        return;
+    }
+
+    loginBox.classList.add("hidden");
+
+    if (role === "employee") {
+        employeeBox.classList.remove("hidden");
+        loadEmployeeLeaves();
+    } else {
+        managerBox.classList.remove("hidden");
+        loadManagerView();
+    }
+}
+
+function applyLeave() {
+    let reason = document.getElementById("reason").value.trim();
+    let start = document.getElementById("startDate").value;
+    let end = document.getElementById("endDate").value;
+
+    if (!reason || !start || !end) {
+        alert("Fill all details");
+        return;
+    }
+
+    if (end < start) {
+        alert("End date cannot be before start date");
+        return;
+    }
+
+    let leaves = getLeaves();
+
+    leaves.push({
+        user: currentUser,
+        reason,
+        start,
+        end,
+        status: "Pending"
+    });
+
+    saveLeaves(leaves);
+
+    alert("Leave applied!");
+
+    document.getElementById("reason").value = "";
+    document.getElementById("startDate").value = "";
+    document.getElementById("endDate").value = "";
+
+    loadEmployeeLeaves();
+}
+
+function formatLeave(l) {
+    return `
+        <div class="box">
+            <b>${l.start}</b> → <b>${l.end}</b><br>
+            ${l.reason}
+        </div>
+    `;
+}
+
+function loadEmployeeLeaves() {
+    let leaves = getLeaves().filter(l => l.user === currentUser);
+
+    empPending.innerHTML = "";
+    empApproved.innerHTML = "";
+    empRejected.innerHTML = "";
+
+    leaves.forEach(l => {
+        if (l.status === "Pending") empPending.innerHTML += formatLeave(l);
+        if (l.status === "Approved") empApproved.innerHTML += formatLeave(l);
+        if (l.status === "Rejected") empRejected.innerHTML += formatLeave(l);
+    });
+}
+
+function loadManagerView() {
+    let leaves = getLeaves();
+
+    pendingLeaves.innerHTML = "";
+    approvedLeaves.innerHTML = "";
+    rejectedLeaves.innerHTML = "";
+
+    leaves.forEach((l, i) => {
+        if (l.status === "Pending") {
+            pendingLeaves.innerHTML += `
+                <div class="box">
+                    <b>${l.user}</b><br>
+                    ${l.start} → ${l.end}<br>
+                    ${l.reason}
+                    <button class="btn-approve" onclick="updateStatus(${i}, 'Approved')">Approve</button>
+                    <button class="btn-reject" onclick="updateStatus(${i}, 'Rejected')">Reject</button>
+                </div>
+            `;
+        }
+
+        if (l.status === "Approved") {
+            approvedLeaves.innerHTML += formatLeave(l);
+        }
+
+        if (l.status === "Rejected") {
+            rejectedLeaves.innerHTML += formatLeave(l);
+        }
+    });
+}
+
+function updateStatus(index, status) {
+    let leaves = getLeaves();
+    leaves[index].status = status;
+    saveLeaves(leaves);
+    loadManagerView();
+}
+
+function goBack() {
+    employeeBox.classList.add("hidden");
+    managerBox.classList.add("hidden");
+    loginBox.classList.remove("hidden");
+}
+</script>
+
+</body>
+</html>

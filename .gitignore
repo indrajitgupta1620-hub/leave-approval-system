@@ -1,0 +1,11 @@
+drivers/
+*.exe
+__pycache__/
+*.pyc
+*.pyo
+node_modules/
+.env
+.vercel/
+.wdm/
+.idea/
+leave-approval-system-main/

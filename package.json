@@ -1,0 +1,21 @@
+{
+  "name": "leave-approval-system",
+  "version": "1.0.0",
+  "description": "Leave Approval System with Automated Selenium and REST API Testing",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test:ui": "python test_selenium_leave_approval.py",
+    "test:api": "python test_api_leave_approval.py",
+    "test:all": "python run_all_tests.py"
+  },
+  "keywords": [
+    "leave-approval",
+    "selenium",
+    "testing",
+    "postman",
+    "api"
+  ],
+  "author": "Indrajit Gupta",
+  "license": "ISC"
+}

@@ -1,0 +1,255 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-leaveapproval01",
+    "name": "Leave Approval System API Tests",
+    "description": "Comprehensive automated test suite for Leave Approval System API. Covers Health, Auth, Leave Application, Status Retrieval, Approval, Rejection, and Deletion.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "createdLeaveId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"API Status is UP\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql(\"UP\");",
+              "});",
+              "",
+              "pm.test(\"Response time is under 500ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(500);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "2. Employee Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Login successful response structure\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql(\"Login successful\");",
+              "    pm.expect(jsonData.user.username).to.eql(\"Alfiya\");",
+              "    pm.expect(jsonData.user.role).to.eql(\"employee\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"Alfiya\",\n  \"role\": \"employee\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "login"]
+        }
+      }
+    },
+    {
+      "name": "3. Apply Leave (Create Request)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Leave created with Pending status\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql(\"Leave applied successfully\");",
+              "    pm.expect(jsonData.leave.status).to.eql(\"Pending\");",
+              "    pm.expect(jsonData.leave.user).to.eql(\"Alfiya\");",
+              "    ",
+              "    // REQUEST CHAINING: Extract generated Leave ID and store in both Collection and Environment variables",
+              "    pm.collectionVariables.set(\"createdLeaveId\", jsonData.leave.id);",
+              "    pm.environment.set(\"createdLeaveId\", jsonData.leave.id);",
+              "    console.log(\"[CHAINING] Captured Created Leave ID: \" + jsonData.leave.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user\": \"Alfiya\",\n  \"reason\": \"Attending Tech Conference\",\n  \"start\": \"2026-12-10\",\n  \"end\": \"2026-12-12\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/leaves",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "leaves"]
+        }
+      }
+    },
+    {
+      "name": "4. Get All Leaves",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Returns array of leaves with total count\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property(\"leaves\");",
+              "    pm.expect(jsonData.leaves).to.be.an(\"array\");",
+              "    pm.expect(jsonData.total).to.be.greaterThan(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/leaves",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "leaves"]
+        }
+      }
+    },
+    {
+      "name": "5. Manager Approve Leave",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Leave status updated to Approved\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql(\"Leave approved successfully\");",
+              "    pm.expect(jsonData.leave.status).to.eql(\"Approved\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"Approved\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/leaves/{{createdLeaveId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "leaves", "{{createdLeaveId}}"]
+        }
+      }
+    },
+    {
+      "name": "6. Manager Reject Leave",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Leave status updated to Rejected\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql(\"Leave rejected successfully\");",
+              "    pm.expect(jsonData.leave.status).to.eql(\"Rejected\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"Rejected\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/leaves/{{createdLeaveId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "leaves", "{{createdLeaveId}}"]
+        }
+      }
+    }
+  ]
+}

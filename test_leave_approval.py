@@ -15,10 +15,15 @@ try:
 except ImportError:
     USE_WDM = False
 
-TARGET_URL = os.environ.get(
-    "APP_URL",
-    "https://alfiyazareen.github.io/leave-approval-system/"
-)
+CURRENT_DIR = Path(__file__).resolve().parent
+LOCAL_INDEX = CURRENT_DIR / "index.html"
+if not LOCAL_INDEX.exists():
+    LOCAL_INDEX = CURRENT_DIR.parent / "index.html"
+if not LOCAL_INDEX.exists():
+    LOCAL_INDEX = CURRENT_DIR / "leave-approval-system-main" / "index.html"
+
+LOCAL_FILE_URL = f"file:///{str(LOCAL_INDEX).replace('\\', '/')}"
+TARGET_URL = os.environ.get("APP_URL", LOCAL_FILE_URL)
 
 class LeaveApprovalSystemTests(unittest.TestCase):
     @classmethod
@@ -37,9 +42,18 @@ class LeaveApprovalSystemTests(unittest.TestCase):
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
 
-        local_driver = Path(__file__).resolve().parent / "drivers" / "chromedriver.exe"
-        if local_driver.exists():
-            cls.driver = webdriver.Chrome(service=Service(str(local_driver)), options=options)
+        candidate_paths = [
+            Path(__file__).resolve().parent / "drivers" / "chromedriver.exe",
+            Path(__file__).resolve().parent.parent / "drivers" / "chromedriver.exe",
+        ]
+        chosen_driver = None
+        for p in candidate_paths:
+            if p.exists():
+                chosen_driver = str(p)
+                break
+
+        if chosen_driver:
+            cls.driver = webdriver.Chrome(service=Service(chosen_driver), options=options)
         elif USE_WDM:
             cls.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
         else:

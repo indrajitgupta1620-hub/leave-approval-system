@@ -7,6 +7,7 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_DIR))
 
+from test_leave_approval import LeaveApprovalSystemTests
 from test_selenium_leave_approval import TestLeaveApprovalSelenium
 from test_api_leave_approval import TestLeaveApprovalAPI
 from automation_framework.tests.test_leave_approval_pom import TestLeaveApprovalPOM
@@ -44,6 +45,7 @@ def run_full_suite():
         loader = unittest.TestLoader()
         suite = unittest.TestSuite()
 
+        suite.addTests(loader.loadTestsFromTestCase(LeaveApprovalSystemTests))
         suite.addTests(loader.loadTestsFromTestCase(TestLeaveApprovalSelenium))
         suite.addTests(loader.loadTestsFromTestCase(TestLeaveApprovalPOM))
         suite.addTests(loader.loadTestsFromTestCase(TestLeaveApprovalAPI))

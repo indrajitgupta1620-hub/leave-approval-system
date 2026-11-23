@@ -5,9 +5,11 @@ __pycache__/
 *.pyo
 node_modules/
 .env
-.vercel/
+.vercel
+screenshots//
 .wdm/
 .idea/
 leave-approval-system-main/
 
 .vercel
+screenshots/

@@ -3,12 +3,16 @@ import sys
 import time
 import json
 import unittest
+import subprocess
+from pathlib import Path
 import requests
 
 BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:3000")
 
 
 class TestLeaveApprovalAPI(unittest.TestCase):
+    server_process = None
+
     @classmethod
     def setUpClass(cls):
         print("\n===========================================================================")
@@ -16,12 +20,50 @@ class TestLeaveApprovalAPI(unittest.TestCase):
         print(f" Target Base URL: {BASE_URL}")
         print("===========================================================================")
 
+        is_running = False
         try:
-            resp = requests.get(f"{BASE_URL}/api/health", timeout=3)
+            resp = requests.get(f"{BASE_URL}/api/health", timeout=2)
             if resp.status_code == 200:
-                print("  API Server is UP and responding at " + BASE_URL)
-        except requests.exceptions.ConnectionError:
-            pass
+                is_running = True
+                print("  Existing API server detected and responding at " + BASE_URL)
+        except Exception:
+            is_running = False
+
+        if not is_running and "localhost" in BASE_URL:
+            project_dir = Path(__file__).resolve().parent
+            server_script = project_dir / "server.js"
+            if not server_script.exists():
+                server_script = project_dir.parent / "server.js"
+            if not server_script.exists():
+                server_script = project_dir / "leave-approval-system-main" / "server.js"
+
+            if server_script.exists():
+                print("  Auto-starting local API server (node server.js)...")
+                cls.server_process = subprocess.Popen(
+                    ["node", str(server_script)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+                time.sleep(1.5)
+                for _ in range(10):
+                    try:
+                        r = requests.get(f"{BASE_URL}/api/health", timeout=1)
+                        if r.status_code == 200:
+                            print("  Local API server started and verified at " + BASE_URL)
+                            break
+                    except Exception:
+                        time.sleep(0.5)
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.server_process:
+            print("\n  Stopping auto-started API server...")
+            cls.server_process.terminate()
+            try:
+                cls.server_process.wait(timeout=3)
+            except Exception:
+                cls.server_process.kill()
+            print("  API server stopped cleanly")
 
     def test_01_api_health_check(self):
         print("\n[RUNNING] TC_API_01: Health Check (GET /api/health)")
@@ -48,6 +90,7 @@ class TestLeaveApprovalAPI(unittest.TestCase):
         payload = {"username": "Alfiya", "role": "employee"}
         resp = requests.post(endpoint, json=payload, timeout=5)
         self.assertEqual(resp.status_code, 200)
+
         json_data = resp.json()
         self.assertEqual(json_data.get("message"), "Login successful")
         self.assertEqual(json_data.get("user", {}).get("username"), "Alfiya")

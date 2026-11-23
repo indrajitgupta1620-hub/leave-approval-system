@@ -9,3 +9,5 @@ node_modules/
 .wdm/
 .idea/
 leave-approval-system-main/
+
+.vercel

@@ -1,9 +1,10 @@
 const http = require('http');
 const url = require('url');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 
-// In-memory leave records
 let leaves = [
     {
         id: "1",
@@ -38,11 +39,11 @@ function parseBody(req) {
                 reject(err);
             }
         });
-        req.on('error', reject);
+        req.on('error', err => reject(err));
     });
 }
 
-const server = http.createServer(async (req, res) => {
+async function requestHandler(req, res) {
     setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
@@ -55,7 +56,14 @@ const server = http.createServer(async (req, res) => {
     const pathname = parsedUrl.pathname;
 
     try {
-        // 1. Health check
+        if (!pathname.startsWith('/api') && req.method === 'GET') {
+            const htmlPath = path.join(__dirname, 'index.html');
+            if (fs.existsSync(htmlPath)) {
+                res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+                return res.end(fs.readFileSync(htmlPath));
+            }
+        }
+
         if (pathname === '/api/health' && req.method === 'GET') {
             return sendJson(res, 200, {
                 status: 'UP',
@@ -64,7 +72,6 @@ const server = http.createServer(async (req, res) => {
             });
         }
 
-        // 2. User login
         if (pathname === '/api/login' && req.method === 'POST') {
             const body = await parseBody(req);
             if (!body.username || !body.role) {
@@ -79,7 +86,6 @@ const server = http.createServer(async (req, res) => {
             });
         }
 
-        // 3. Get leaves (with optional ?user=... filter)
         if (pathname === '/api/leaves' && req.method === 'GET') {
             const filterUser = parsedUrl.query.user;
             if (filterUser) {
@@ -89,7 +95,6 @@ const server = http.createServer(async (req, res) => {
             return sendJson(res, 200, { total: leaves.length, leaves });
         }
 
-        // 4. Apply for a leave
         if (pathname === '/api/leaves' && req.method === 'POST') {
             const body = await parseBody(req);
             const { user, reason, start, end } = body;
@@ -118,7 +123,6 @@ const server = http.createServer(async (req, res) => {
             });
         }
 
-        // 5. Update leave status (Approve / Reject)
         if (pathname.startsWith('/api/leaves/') && (req.method === 'PUT' || req.method === 'PATCH')) {
             const id = pathname.split('/')[3];
             const body = await parseBody(req);
@@ -140,7 +144,6 @@ const server = http.createServer(async (req, res) => {
             });
         }
 
-        // 6. Delete a leave
         if (pathname.startsWith('/api/leaves/') && req.method === 'DELETE') {
             const id = pathname.split('/')[3];
             const index = leaves.findIndex(l => l.id === id);
@@ -155,15 +158,20 @@ const server = http.createServer(async (req, res) => {
             });
         }
 
-        // 404 fallback
         return sendJson(res, 404, { error: 'Endpoint not found' });
     } catch (err) {
         return sendJson(res, 500, { error: 'Internal Server Error', details: err.message });
     }
-});
+}
 
-server.listen(PORT, () => {
-    console.log(` Leave Approval API Server is running at http://localhost:${PORT}`);
-    console.log(` Health check: http://localhost:${PORT}/api/health`);
-    console.log(` Leaves list:  http://localhost:${PORT}/api/leaves`);
-});
+const server = http.createServer(requestHandler);
+
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log(`Leave Approval API Server is running at http://localhost:${PORT}`);
+        console.log(`Health check: http://localhost:${PORT}/api/health`);
+        console.log(`Leaves list:  http://localhost:${PORT}/api/leaves`);
+    });
+}
+
+module.exports = requestHandler;

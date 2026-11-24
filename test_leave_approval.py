@@ -158,7 +158,7 @@ class LeaveApprovalSystemTests(unittest.TestCase):
         print("  [PASS] TC03: Leave applied and displayed under Pending list")
 
     def test_04_manager_view_and_approve_leave(self):
-        print("\n[RUNNING] TC04: Two Employees Apply and Manager Views Both Applications and Approves")
+        print("\n[RUNNING] TC04: Two Employees Apply and One Manager Views Both Applications, Approves and Rejects")
 
         self.login_user("Alfiya", "employee")
         self.submit_leave("2026-12-01", "2026-12-05", "Medical leave for family emergency")
@@ -181,7 +181,7 @@ class LeaveApprovalSystemTests(unittest.TestCase):
         self.assertIn("StudentA", pending_box.text)
         self.assertIn("Attending Project Workshop", pending_box.text)
         print("  [INFO] Verified both employee applications are visible in Manager Dashboard")
-        time.sleep(3)
+        time.sleep(2)
 
         target_approve_xpath = "//div[@id='pendingLeaves']//div[contains(@class, 'box') and contains(., 'Attending Project Workshop')]//button[contains(@class, 'btn-approve')]"
         try:
@@ -189,18 +189,31 @@ class LeaveApprovalSystemTests(unittest.TestCase):
         except Exception:
             approve_btn = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#pendingLeaves .btn-approve")))
         approve_btn.click()
-        time.sleep(3)
+        time.sleep(2)
 
         approved_box = self.wait.until(EC.visibility_of_element_located((By.ID, "approvedLeaves")))
+        self.assertIn("StudentA", approved_box.text)
         self.assertIn("Attending Project Workshop", approved_box.text)
 
-        updated_pending_box = self.driver.find_element(By.ID, "pendingLeaves")
-        self.assertIn("Medical leave for family emergency", updated_pending_box.text)
-        self.assertNotIn("Attending Project Workshop", updated_pending_box.text)
-
-        self.take_screenshot("02_manager_approved_leave")
+        target_reject_xpath = "//div[@id='pendingLeaves']//div[contains(@class, 'box') and contains(., 'Medical leave for family emergency')]//button[contains(@class, 'btn-reject')]"
+        try:
+            reject_btn = self.wait.until(EC.element_to_be_clickable((By.XPATH, target_reject_xpath)))
+        except Exception:
+            reject_btn = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#pendingLeaves .btn-reject")))
+        reject_btn.click()
         time.sleep(2)
-        print("  [PASS] TC04: Both employee applications displayed to Manager and approved successfully")
+
+        rejected_box = self.wait.until(EC.visibility_of_element_located((By.ID, "rejectedLeaves")))
+        self.assertIn("Alfiya", rejected_box.text)
+        self.assertIn("Medical leave for family emergency", rejected_box.text)
+
+        updated_pending_box = self.driver.find_element(By.ID, "pendingLeaves")
+        self.assertNotIn("Attending Project Workshop", updated_pending_box.text)
+        self.assertNotIn("Medical leave for family emergency", updated_pending_box.text)
+
+        self.take_screenshot("02_manager_processed_leaves")
+        time.sleep(2)
+        print("  [PASS] TC04: Two employee applications displayed to Manager, one approved and one rejected successfully")
 
 
 if __name__ == "__main__":

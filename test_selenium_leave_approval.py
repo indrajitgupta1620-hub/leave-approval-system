@@ -108,7 +108,7 @@ class TestLeaveApprovalSelenium(unittest.TestCase):
             cls.driver.quit()
 
         print("  ALL TESTS COMPLETED SUCCESSFULLY                     ")
-       
+
 
     def setUp(self):
         self.driver.get(TARGET_URL)
@@ -231,7 +231,7 @@ class TestLeaveApprovalSelenium(unittest.TestCase):
         print("  [PASS] TC_SE_03: Employee successfully applied for leave and verified Pending status")
 
     def test_04_employee_demands_leave_and_manager_approves(self):
-        print("\n[TEST START] TC_SE_04: Two Employees Apply Leave and Manager Views Both Applications and Approves")
+        print("\n[TEST START] TC_SE_04: Two Employees Apply Leave and One Manager Views Both Applications and Approves")
 
         emp1_name = "Priya Verma"
         leave1_reason = "Annual Medical Checkup and Recovery"
@@ -258,7 +258,7 @@ class TestLeaveApprovalSelenium(unittest.TestCase):
         self.assertIn(emp2_name, pending_container.text)
         self.assertIn(leave2_reason, pending_container.text)
         print(f"  [INFO] Verified both applications from '{emp1_name}' and '{emp2_name}' are visible in Manager Dashboard")
-        time.sleep(3)
+        time.sleep(2)
 
         target_approve_xpath = f"//div[@id='pendingLeaves']//div[contains(@class, 'box') and contains(., '{leave1_reason}')]//button[contains(@class, 'btn-approve')]"
         try:
@@ -270,9 +270,10 @@ class TestLeaveApprovalSelenium(unittest.TestCase):
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "#pendingLeaves .btn-approve"))
             )
         approve_button.click()
-        time.sleep(3)
+        time.sleep(2)
 
         approved_container = self.wait.until(EC.visibility_of_element_located((By.ID, "approvedLeaves")))
+        self.assertIn(emp1_name, approved_container.text)
         self.assertIn(leave1_reason, approved_container.text)
 
         updated_pending = self.driver.find_element(By.ID, "pendingLeaves").text
@@ -281,7 +282,7 @@ class TestLeaveApprovalSelenium(unittest.TestCase):
 
         self.capture_screenshot("04_manager_approved_leave_success")
         time.sleep(2)
-        print("  [PASS] TC_SE_04: Both employee applications displayed to Manager and approved successfully")
+        print("  [PASS] TC_SE_04: Two employee applications displayed to Manager and approved successfully")
 
     def test_05_employee_demands_leave_and_manager_rejects(self):
         print("\n[TEST START] TC_SE_05: Employee Applies for Leave and Manager Rejects")

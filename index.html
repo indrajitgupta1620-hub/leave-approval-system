@@ -223,14 +223,16 @@ function applyLeave() {
 
     let leaves = getLeaves();
 
-    leaves.push({
+    let newLeave = {
+        id: "leave_" + Date.now() + "_" + Math.floor(Math.random() * 10000),
         user: currentUser,
-        reason,
-        start,
-        end,
+        reason: reason,
+        start: start,
+        end: end,
         status: "Pending"
-    });
+    };
 
+    leaves.push(newLeave);
     saveLeaves(leaves);
 
     alert("Leave applied!");
@@ -242,9 +244,10 @@ function applyLeave() {
     loadEmployeeLeaves();
 }
 
-function formatLeave(l) {
+function formatLeave(l, showUser = false) {
     return `
         <div class="box">
+            ${showUser ? `<b>${l.user}</b><br>` : ''}
             <b>${l.start}</b> → <b>${l.end}</b><br>
             ${l.reason}
         </div>
@@ -259,9 +262,9 @@ function loadEmployeeLeaves() {
     empRejected.innerHTML = "";
 
     leaves.forEach(l => {
-        if (l.status === "Pending") empPending.innerHTML += formatLeave(l);
-        if (l.status === "Approved") empApproved.innerHTML += formatLeave(l);
-        if (l.status === "Rejected") empRejected.innerHTML += formatLeave(l);
+        if (l.status === "Pending") empPending.innerHTML += formatLeave(l, false);
+        if (l.status === "Approved") empApproved.innerHTML += formatLeave(l, false);
+        if (l.status === "Rejected") empRejected.innerHTML += formatLeave(l, false);
     });
 }
 
@@ -273,33 +276,55 @@ function loadManagerView() {
     rejectedLeaves.innerHTML = "";
 
     leaves.forEach((l, i) => {
+        if (!l.id) {
+            l.id = "leave_" + i;
+        }
+
         if (l.status === "Pending") {
             pendingLeaves.innerHTML += `
-                <div class="box">
+                <div class="box" id="pending_leave_${l.id}">
                     <b>${l.user}</b><br>
                     ${l.start} → ${l.end}<br>
                     ${l.reason}
-                    <button class="btn-approve" onclick="updateStatus(${i}, 'Approved')">Approve</button>
-                    <button class="btn-reject" onclick="updateStatus(${i}, 'Rejected')">Reject</button>
+                    <div style="margin-top: 8px;">
+                        <button class="btn-approve" onclick="updateStatus('${l.id}', 'Approved')">Approve</button>
+                        <button class="btn-reject" onclick="updateStatus('${l.id}', 'Rejected')">Reject</button>
+                    </div>
                 </div>
             `;
         }
 
         if (l.status === "Approved") {
-            approvedLeaves.innerHTML += formatLeave(l);
+            approvedLeaves.innerHTML += `
+                <div class="box" id="approved_leave_${l.id}">
+                    <b>${l.user}</b><br>
+                    ${l.start} → ${l.end}<br>
+                    ${l.reason}
+                </div>
+            `;
         }
 
         if (l.status === "Rejected") {
-            rejectedLeaves.innerHTML += formatLeave(l);
+            rejectedLeaves.innerHTML += `
+                <div class="box" id="rejected_leave_${l.id}">
+                    <b>${l.user}</b><br>
+                    ${l.start} → ${l.end}<br>
+                    ${l.reason}
+                </div>
+            `;
         }
     });
+    saveLeaves(leaves);
 }
 
-function updateStatus(index, status) {
+function updateStatus(leaveId, status) {
     let leaves = getLeaves();
-    leaves[index].status = status;
-    saveLeaves(leaves);
-    loadManagerView();
+    let leave = leaves.find(l => String(l.id) === String(leaveId));
+    if (leave) {
+        leave.status = status;
+        saveLeaves(leaves);
+        loadManagerView();
+    }
 }
 
 function goBack() {
